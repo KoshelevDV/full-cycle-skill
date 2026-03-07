@@ -39,11 +39,12 @@ full-cycle-skill/
 
 ## Status
 
-- ✅ Initial documentation created (2026-03-06)
-- ✅ SKILL.md v3.3 (full cycle with cron anti-freeze)
-- ✅ docs/ — all 4 topic files
-- ✅ examples/ — Python + Rust
-- 🔲 clawhub publication
+- **Version:** v3.4
+- **Battle-tested:** gitlab-reviewer project (PRs #7, #9, #12, #15, #16, #18)
+  - 6 full cycles completed
+  - Issues caught: javascript: XSS, OR-logic vacuous assertions, dead code ActionType, post-read size checks, missing ruff format
+  - 0 false positives requiring manual override
+- **Known limitations:** fix subagent doesn't add tests for its own fixes (test coverage of fix paths ~0%)
 
 ## How to use locally
 

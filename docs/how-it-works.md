@@ -257,3 +257,31 @@ The orchestrator **must NOT** send intermediate messages to the user during:
 3. Task ambiguity that requires user decision
 
 All other cases: silently proceed to next step.
+
+## Lessons Learned from Real Use (gitlab-reviewer, 2026-03-07)
+
+### What worked well
+- **4-role parallel review** consistently catches different issue types: Security found javascript: XSS, Architect found dead code, QA found vacuous OR-assertion, Python Dev verified logic correctness
+- **Scope rule** ("reviewers look at diff only, not pre-existing") prevents false alarm storms on legacy codebases
+- **3-round cap** kept the system from looping forever; in practice 2 rounds was max needed
+- **Auto-announce** from subagents eliminated the need for polling in most cases; crons only fired as safety net
+
+### Common patterns requiring fix rounds
+- **OR-logic in tests** makes assertions vacuous: `assert A or B` where B is always True
+- **Dead code in ActionType enums** — defining constants without implementing them
+- **Post-read size checks** instead of pre-check on Content-Length header
+
+### Cron timing that worked
+- Developer subagent (900s timeout) → wakeup crons at T+20min and T+23min
+- Fix subagent (600s timeout) → wakeup crons at T+12min and T+15min
+- Review subagents (1200s timeout) → wakeup crons at T+23min and T+26min
+
+### ruff check vs ruff format
+Both are required. `ruff check` = linter (code issues). `ruff format` = formatter (style).
+Running only `ruff check` and ignoring `ruff format` will cause CI failures.
+Commands:
+```bash
+ruff check src/ tests/
+ruff format src/ tests/
+ruff format --check src/ tests/  # verify
+```

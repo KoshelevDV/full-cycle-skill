@@ -277,6 +277,25 @@ Output: BLOCKING (must fix) / MINOR (create issue) / APPROVE.
 
 ---
 
+## Python Lint Requirements
+
+For Python projects, both linter AND formatter must pass:
+
+```bash
+# Linter (code issues, unused imports, etc.)
+python3 -m ruff check src/ tests/ 2>&1 | head -30
+
+# Formatter (apply)
+python3 -m ruff format src/ tests/
+
+# Formatter (verify — same as CI)
+python3 -m ruff format --check src/ tests/ 2>&1 | head -10
+```
+
+Common mistake: running only `ruff check` and missing `ruff format`. CI runs both.
+
+---
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |

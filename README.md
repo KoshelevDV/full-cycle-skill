@@ -7,6 +7,15 @@
 
 ---
 
+## What's New (v3.4)
+
+- `ruff format` is now required alongside `ruff check` — both linter and formatter must pass
+- Developer and fix subagents now **mandatory update docs** (AGENTS.md + README + BACKLOG) before commit
+- Cron anti-freeze timing fixed: crons fire **after** expected completion, not during
+- Self-rescheduling logic: if subagents still active → delete cron, add new one at T+5min
+
+---
+
 ## What is this?
 
 A skill for [OpenClaw](https://openclaw.ai) that automates the full development cycle:

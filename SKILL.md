@@ -107,8 +107,10 @@ TEST:
 
 LINT (обязательно для Python):
 - python3 -m ruff check src/ tests/ 2>&1 | head -30
-- Исправить все ошибки ruff перед коммитом
-- Не коммитить с красным ruff
+- python3 -m ruff format src/ tests/
+- python3 -m ruff format --check src/ tests/ 2>&1 | head -10
+- Исправить все ошибки ruff check и ruff format перед коммитом
+- Не коммитить с красным ruff check или ruff format
 
 ЕСЛИ ROADMAP есть — прочитать, найти текущий пункт, запомнить для architect.
 
@@ -358,9 +360,11 @@ cd <project_root> && git checkout <branch>
 <команда запуска тестов>
 Не коммитить пока тесты красные.
 
-Запустить линтер (Python):
+Запустить линтер и форматтер (Python):
 python3 -m ruff check src/ tests/ 2>&1 | head -30
-Исправить все ошибки ruff. Не коммитить с красным ruff.
+python3 -m ruff format src/ tests/
+python3 -m ruff format --check src/ tests/ 2>&1 | head -10
+Исправить все ошибки. Не коммитить с красным ruff check или ruff format.
 
 Обновить документацию (ОБЯЗАТЕЛЬНО):
 - AGENTS.md: добавить найденные pitfalls, обновить статус
