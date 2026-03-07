@@ -1,7 +1,7 @@
 ---
 name: Full Cycle Developer
 slug: full-cycle
-version: 3.0.0
+version: 3.5.0
 description: >
   Full cycle mode: code → test → review → fix → push.
   Главная сессия молча оркестрирует всё: developer-субагент, 4 ревью-роли параллельно,
@@ -391,6 +391,69 @@ ISSUE: <url или none>
 
 ---
 
+## Шаг 5.3: Test-Gap субагент (после каждого fix-субагента)
+
+**Цель:** fix-субагент фокусируется на исправлениях, а не на тестах. Test-gap субагент восполняет этот gap — пишет тесты для новых code paths, добавленных в fix.
+
+**Когда запускать:** сразу после fix-субагента, **параллельно с Round N review** (они не зависят друг от друга).
+
+**Что проверять:**
+- `git diff main..<branch>` для fix-коммита(ов) — смотреть только строки, добавленные в fix
+- Для каждой новой ветки логики (новый `if`, новый `except`, новый `return`) — проверить, есть ли уже тест
+- Если нет → написать
+
+**Шаблон task для test-gap субагента:**
+
+```
+## TEST-GAP SUBAGENT — <project> <branch>
+
+cd <project_root> && git checkout <branch>
+
+Прочитай AGENTS.md.
+
+Задача: дополнить тестовое покрытие для fix-коммита(ов).
+
+## Diff для анализа
+```bash
+git log --oneline main..<branch> | grep -i "fix\|hotfix\|patch"
+git diff main..<branch> -- <changed_files>
+```
+
+Для каждой новой строки логики (новый if/elif/except/return) в fix-диффе:
+1. Проверить — есть ли уже тест для этого пути
+2. Если нет → написать минимальный тест
+
+Требования:
+- Один тест = один конкретный scenario, не "тест на всё"
+- Использовать pytest fixtures и паттерны из уже существующих тестов
+- Если fix покрыт существующим тестом (можно доказать) — не дублировать
+
+После написания тестов:
+<команда запуска тестов>
+
+Запустить линтер и форматтер:
+python3 -m ruff check src/ tests/ 2>&1 | head -30
+python3 -m ruff format src/ tests/
+python3 -m ruff format --check src/ tests/ 2>&1 | head -10
+
+git add -A
+git commit -m "test: add coverage for fix paths in <branch>"
+git push https://KoshelevDV:$(gh auth token)@github.com/KoshelevDV/<repo>.git <branch>
+
+Output:
+TESTS_ADDED: <N>
+TESTS_TOTAL: <N passed>
+LINT: ruff clean
+COVERED_PATHS: <перечень что покрыто>
+```
+
+Таймаут: `runTimeoutSeconds=600`
+
+**QA-правило (обязательно в Round 2+):**
+QA считает "fix path без теста" = **BLOCKING** (не MINOR). Если test-gap субагент проработал, но какой-то путь всё равно не покрыт — QA блокирует.
+
+---
+
 ## Шаг 5.5: Обновление документации (после fix, перед PR)
 
 После того как blocking_count == 0 и тесты зелёные — обновить документацию проекта:
@@ -466,6 +529,8 @@ Issues: <url или none>
 | Security | CRITICAL, HIGH | MEDIUM, LOW |
 
 **MUST HAVE от tester = BLOCKING** — недостающий тест для AC = незавершённая фича.
+
+**Fix path без теста (Round 2+) = BLOCKING** — после каждого fix-субагента запускается test-gap субагент; если в Round 2+ QA видит новую ветку логики без теста → BLOCKING, не MINOR.
 
 ---
 
