@@ -123,6 +123,8 @@ MEMORY_DIR: .full-cycle/<branch>/memory/
 2. Прочитать memory/patterns.md — паттерны кодовой базы
 3. Прочитать memory/gotchas.md — известные подводные камни
 4. Прочитать memory/codebase_map.json — что где лежит
+5. Если существует memory/session_insights/ — прочитать последние 3 файла:
+   ls memory/session_insights/ | sort | tail -3  → читать каждый
 
 PRE-IMPLEMENTATION CHECKLIST (для каждого subtask):
 Перед написанием кода проанализировать:
@@ -131,18 +133,45 @@ PRE-IMPLEMENTATION CHECKLIST (для каждого subtask):
 - Reference files из subtask.patterns_from — прочитать их
 - Что может сломать существующие тесты
 
+Подтвердить явно в тексте перед реализацией:
+"## Pre-Implementation Checklist — <subtask-id>
+Тип работы: [тип]
+Вероятные проблемы: [список]
+Reference files прочитаны: [список]
+Риски для тестов: [список или none]
+Ready to implement: YES"
+
 SELF-CRITIQUE (после реализации, перед верификацией):
 - [ ] Следует паттернам из patterns_from
 - [ ] Обработка ошибок есть
-- [ ] Нет захардкоженных значений
+- [ ] Нет debug-вывода / захардкоженных значений
 - [ ] Все files_to_modify реально изменены
 - [ ] Требования subtask выполнены полностью
 Если что-то не так — исправить сейчас.
+Вынести вердикт: "Verdict: PROCEED YES/NO | Confidence: High/Medium/Low"
 
-После завершения всех subtask записать в memory:
-- memory/patterns.md — новые паттерны
-- memory/gotchas.md — подводные камни
-- memory/codebase_map.json — обновить (новые/изменённые файлы)
+После завершения всех subtask — обновить memory и записать session insights:
+
+1. memory/patterns.md — новые паттерны
+2. memory/gotchas.md — подводные камни
+3. memory/codebase_map.json — обновить (новые/изменённые файлы)
+4. Создать memory/session_insights/session_NNN.json (NNN = кол-во файлов в директории + 1):
+   mkdir -p memory/session_insights
+   NNN=$(ls memory/session_insights/ 2>/dev/null | wc -l | awk '{printf "%03d", $1+1}')
+
+   Содержимое:
+   {
+     "session_number": <N>,
+     "timestamp": "<ISO>",
+     "subtasks_completed": ["<subtask-id>"],
+     "discoveries": {
+       "files_understood": {"<path>": "<что делает>"},
+       "patterns_found": ["<паттерн 1>"],
+       "gotchas_encountered": ["<подводный камень 1>"]
+     },
+     "what_worked": ["<что сработало>"],
+     "recommendations_for_next_session": ["<фокус следующей сессии>"]
+   }
 
 INIT:
 - git fetch origin && git pull origin main && git checkout -b <branch>
