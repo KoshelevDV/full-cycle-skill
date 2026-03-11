@@ -1,10 +1,10 @@
 ---
 name: Full Cycle Developer
 slug: full-cycle
-version: 3.5.0
+version: 4.0.0
 description: >
-  Full cycle mode: code → test → review → fix → push.
-  Главная сессия молча оркестрирует всё: developer-субагент, 4 ревью-роли параллельно,
+  Full cycle mode: plan → code → test → review → fix → push.
+  Главная сессия молча оркестрирует всё: planner-субагент, developer-субагент, 4 ревью-роли параллельно,
   fix-субагент. Пользователь видит только итоговый PR.
 metadata: {"openclaw":{"requires":{"bins":["git"]}}}
 ---
@@ -42,6 +42,8 @@ prompts/
 ```
 ГЛАВНАЯ СЕССИЯ (молча)
 │
+├── Шаг 0: sessions_spawn(planner-субагент) → ждёт → [plan.json, memory/ created]
+│
 ├── Шаг 1-3: sessions_spawn(developer-субагент)  → ждёт → [diff, tests green]
 │
 ├── Шаг 4: sessions_spawn × 4 (параллельно):
@@ -73,11 +75,36 @@ prompts/
 ## Execution Pipeline
 
 ```
-1-3. DEVELOP   — developer-субагент: INIT + код + тесты → green
+0.   PLAN      — planner-субагент: исследует кодовую базу → plan.json + memory/
+1-3. DEVELOP   — developer-субагент: читает plan + memory → pre-checklist → код → self-critique → тесты → green
 4.   REVIEW    — 4 ревью-субагента параллельно → главная сессия агрегирует → Final inline
 5.   FIX       — fix-субагент получает BLOCKING список явно → фиксит → тесты green
 6.   PUSH      — главная сессия открывает PR → Output
 ```
+
+---
+
+## Шаг 0: Planner-субагент
+
+Главная сессия спавнит planner-субагент с task:
+
+```
+## PLANNER SUBAGENT — <project> <task>
+
+Прочитать: /opt/projects/llm-review-prompts/prompts/planner/general.md
+Затем следовать инструкциям из этого промпта.
+
+PROJECT_ROOT: <path>
+BRANCH: <branch-name>
+TASK: <описание задачи/issue>
+```
+
+Таймаут: `runTimeoutSeconds=600`
+
+После завершения planner-субагента главная сессия:
+- Читает `.full-cycle/<branch>/plan.json`
+- Если файл существует и валидный JSON → переходит к Шагу 1 (DEVELOP)
+- Если файл не создан → логировать ошибку, fallback: developer работает без плана (старый режим)
 
 ---
 
@@ -87,6 +114,35 @@ prompts/
 
 ```
 ## DEVELOPER SUBAGENT — <project> <task>
+
+SESSION MEMORY (обязательно читать перед кодингом):
+PLAN_FILE: .full-cycle/<branch>/plan.json
+MEMORY_DIR: .full-cycle/<branch>/memory/
+
+1. Прочитать plan.json — найти первый pending subtask
+2. Прочитать memory/patterns.md — паттерны кодовой базы
+3. Прочитать memory/gotchas.md — известные подводные камни
+4. Прочитать memory/codebase_map.json — что где лежит
+
+PRE-IMPLEMENTATION CHECKLIST (для каждого subtask):
+Перед написанием кода проанализировать:
+- Тип работы: API endpoint / background task / data model / etc
+- Вероятные проблемы для этого типа (из gotchas.md или общие)
+- Reference files из subtask.patterns_from — прочитать их
+- Что может сломать существующие тесты
+
+SELF-CRITIQUE (после реализации, перед верификацией):
+- [ ] Следует паттернам из patterns_from
+- [ ] Обработка ошибок есть
+- [ ] Нет захардкоженных значений
+- [ ] Все files_to_modify реально изменены
+- [ ] Требования subtask выполнены полностью
+Если что-то не так — исправить сейчас.
+
+После завершения всех subtask записать в memory:
+- memory/patterns.md — новые паттерны
+- memory/gotchas.md — подводные камни
+- memory/codebase_map.json — обновить (новые/изменённые файлы)
 
 INIT:
 - git fetch origin && git pull origin main && git checkout -b <branch>
